@@ -14,6 +14,7 @@ from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 from read_csv import get_titles, get_most_poular, add_rating, get_md
 from hybrid import final_res
 
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
