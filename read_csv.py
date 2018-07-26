@@ -53,7 +53,7 @@ def get_most_poular():
 def add_rating(userId, movie_title, rating):
     md = get_md()
 
-    links_small = pd.read_csv(path + 'links.csv', encoding='utf-8')
+    links_small = pd.read_csv(path + 'links_mod.csv', encoding='utf-8')
     id_map = links_small[['movieId', 'tmdbId']]
     links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
 
@@ -71,7 +71,7 @@ def add_rating(userId, movie_title, rating):
     id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
     indices_map = id_map.set_index('id')
 
-    with open(path + 'ratings.csv', 'a') as csvfile:
+    with open(path + 'ratings_mod_2.csv', 'a') as csvfile:
         fieldnames = ['userId','movieId', 'rating', 'timestamp']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 

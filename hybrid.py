@@ -15,7 +15,7 @@ import copy
 path = '../the-movies-dataset/'
 
 md = pd. read_csv(path + 'movies_metadata.csv')
-links_small = pd.read_csv(path + 'links.csv')
+links_small = pd.read_csv(path + 'links_mod.csv')
 credits = pd.read_csv(path + 'credits.csv')
 keywords = pd.read_csv(path + 'keywords.csv')
 # ratings = pd.read_csv(path + 'ratings_small.csv')
@@ -100,7 +100,7 @@ def convert_int(x):
     except:
         return np.nan
 
-id_map = pd.read_csv(path + 'links.csv')[['movieId', 'tmdbId']]
+id_map = pd.read_csv(path + 'links_mod.csv')[['movieId', 'tmdbId']]
 id_map['tmdbId'] = id_map['tmdbId'].apply(convert_int)
 id_map.columns = ['movieId', 'id']
 id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
@@ -135,7 +135,7 @@ def hybrid_recommandation(userId, idx, svd, movie_liked_user):
         return []
 
 def final_res(userId):
-    ratings = pd.read_csv(path + 'ratings.csv')
+    ratings = pd.read_csv(path + 'ratings_mod_2.csv')
 
     reader = Reader()
     data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
