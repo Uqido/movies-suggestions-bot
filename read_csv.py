@@ -4,7 +4,7 @@ from ast import literal_eval
 import csv
 
 
-path = '/home/seba/DeepLearning/Recommandation-System/ChatBot/the-movies-dataset/'
+path = '../the-movies-dataset/'
 
 def get_md():
     md = pd.read_csv(path + 'movies_metadata.csv', encoding='utf-8')
@@ -71,7 +71,7 @@ def add_rating(userId, movie_title, rating):
     id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
     indices_map = id_map.set_index('id')
 
-    with open(path + 'ratings_small.csv', 'a') as csvfile:
+    with open(path + 'ratings.csv', 'a') as csvfile:
         fieldnames = ['userId','movieId', 'rating', 'timestamp']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 

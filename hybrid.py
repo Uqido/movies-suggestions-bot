@@ -12,10 +12,10 @@ from nltk.corpus import wordnet
 from surprise import Reader, Dataset, SVD, evaluate
 import copy
 
-path = '/home/seba/DeepLearning/Recommandation-System/ChatBot/the-movies-dataset/'
+path = '../the-movies-dataset/'
 
 md = pd. read_csv(path + 'movies_metadata.csv')
-links_small = pd.read_csv(path + 'links_small.csv')
+links_small = pd.read_csv(path + 'links.csv')
 credits = pd.read_csv(path + 'credits.csv')
 keywords = pd.read_csv(path + 'keywords.csv')
 # ratings = pd.read_csv(path + 'ratings_small.csv')
@@ -135,7 +135,7 @@ def hybrid_recommandation(userId, idx, svd, movie_liked_user):
         return []
 
 def final_res(userId):
-    ratings = pd.read_csv(path + 'ratings_small.csv')
+    ratings = pd.read_csv(path + 'ratings.csv')
 
     reader = Reader()
     data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
