@@ -72,11 +72,11 @@ def add_rating(userId, movie_title, rating):
     indices_map = id_map.set_index('id')
 
     with open(path + 'ratings_mod_2.csv', 'a') as csvfile:
-        fieldnames = ['userId','movieId', 'rating', 'timestamp']
+        fieldnames = ['useless', 'userId','movieId', 'rating']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         tmdbId = md.loc[md['title'] == movie_title]['id']
         tmdbId = tmdbId.values[0]
         movieId = indices_map['movieId'][tmdbId]
 
-        writer.writerow({'userId':userId, 'movieId':movieId, 'rating':rating, 'timestamp':0})
+        writer.writerow({'useless':0, 'userId':userId, 'movieId':movieId, 'rating':rating})
