@@ -7,7 +7,8 @@ import csv
 path = '../the-movies-dataset/'
 
 def get_md():
-    md = pd.read_csv(path + 'movies_metadata.csv', encoding='utf-8')
+    md = pd.read_csv(path + 'newest_film_metadata.csv', encoding='utf-8')
+    del md['useless']
     md = md.drop([19730, 29503, 35587])
     md['id'] = md['id'].astype('int')
     md['genres'] = md['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
@@ -53,11 +54,12 @@ def get_most_poular():
 def add_rating(userId, movie_title, rating):
     md = get_md()
 
-    links_small = pd.read_csv(path + 'links_mod.csv', encoding='utf-8')
-    id_map = links_small[['movieId', 'tmdbId']]
-    links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
+    links = pd.read_csv(path + 'newest_film_links.csv', encoding='utf-8')
+    del links['useless']
+    id_map = links[['movieId', 'tmdbId']]
+    links = links[links['tmdbId'].notnull()]['tmdbId'].astype('int')
 
-    smd = md[md['id'].isin(links_small)]
+    smd = md[md['id'].isin(links)]
     indices = pd.Series(smd.index, index=smd['title'])
 
     def convert_int(x):
@@ -71,8 +73,9 @@ def add_rating(userId, movie_title, rating):
     id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
     indices_map = id_map.set_index('id')
 
-    with open(path + 'ratings_mod_2.csv', 'a') as csvfile:
+    with open(path + 'newest_film_rating.csv', 'a') as csvfile:
         fieldnames = ['useless', 'userId','movieId', 'rating']
+        # fieldnames = ['userId','movieId', 'rating', 'timestamp']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         tmdbId = md.loc[md['title'] == movie_title]['id']
@@ -80,3 +83,4 @@ def add_rating(userId, movie_title, rating):
         movieId = indices_map['movieId'][tmdbId]
 
         writer.writerow({'useless':0, 'userId':userId, 'movieId':movieId, 'rating':rating})
+        # writer.writerow({'userId':userId, 'movieId':movieId, 'rating':rating, 'timestamp':0})

@@ -14,22 +14,22 @@ import copy
 
 path = '../the-movies-dataset/'
 
-md = pd. read_csv(path + 'movies_metadata.csv')
-links_small = pd.read_csv(path + 'links_mod.csv')
-del links_small['useless']
+md = pd. read_csv(path + 'newest_film_metadata.csv')
+links = pd.read_csv(path + 'newest_film_links.csv')
+del md['useless']
+del links['useless']
 credits = pd.read_csv(path + 'credits.csv')
 keywords = pd.read_csv(path + 'keywords.csv')
-# ratings = pd.read_csv(path + 'ratings_small.csv')
 
 md['genres'] = md['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 md['year'] = pd.to_datetime(md['release_date'], errors='coerce').apply(lambda x: [str(x).split('-')[0]] if x != np.nan else [])
 
-links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
+links = links[links['tmdbId'].notnull()]['tmdbId'].astype('int')
 
 md = md.drop([19730, 29503, 35587])
 md['id'] = md['id'].astype('int')
 
-smd = md[md['id'].isin(links_small)]
+smd = md[md['id'].isin(links)]
 smd['tagline'] = smd['tagline'].fillna('')
 smd['description'] = smd['overview'] + smd['tagline']
 smd['description'] = smd['description'].fillna('')
@@ -40,7 +40,7 @@ md['id'] = md['id'].astype('int')
 
 md = md.merge(credits, on='id')
 md = md.merge(keywords, on='id')
-smd = md[md['id'].isin(links_small)]
+smd = md[md['id'].isin(links)]
 
 smd['cast'] = smd['cast'].apply(literal_eval)
 smd['crew'] = smd['crew'].apply(literal_eval)
@@ -81,8 +81,8 @@ smd['keywords'] = smd['keywords'].apply(filter_keywords)
 smd['keywords'] = smd['keywords'].apply(lambda x: [stemmer.stem(i) for i in x])
 smd['keywords'] = smd['keywords'].apply(lambda x: [str.lower(i.replace(" ", "")) for i in x])
 
-# smd['soup'] = smd['keywords'] + smd['cast'] + smd['director'] + smd['genres'] + smd['year']
-smd['soup'] = smd['keywords'] + smd['cast'] + smd['director'] + smd['genres']
+smd['soup'] = smd['keywords'] + smd['cast'] + smd['director'] + smd['genres'] + smd['year']
+# smd['soup'] = smd['keywords'] + smd['cast'] + smd['director'] + smd['genres']
 smd['soup'] = smd['soup'].apply(lambda x: ' '.join(x))
 
 count = CountVectorizer(analyzer='word', ngram_range=(1, 2), min_df=0, stop_words='english')
@@ -101,7 +101,8 @@ def convert_int(x):
     except:
         return np.nan
 
-id_map = pd.read_csv(path + 'links_mod.csv')[['movieId', 'tmdbId']]
+id_map = pd.read_csv(path + 'newest_film_links.csv')[['movieId', 'tmdbId']]
+del id_map['useless']
 id_map['tmdbId'] = id_map['tmdbId'].apply(convert_int)
 id_map.columns = ['movieId', 'id']
 id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
@@ -135,16 +136,19 @@ def hybrid_recommandation(userId, idx, svd, movie_liked_user):
     except:
         return []
 
-def final_res(userId):
-    ratings = pd.read_csv(path + 'ratings_mod_2.csv')
-    del ratings['useless']
+ratings = pd.read_csv(path + 'newest_film_rating.csv')
+del ratings['useless']
+reader = Reader()
+data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
+data.split(n_folds=10)
+svd = SVD()
+trainset = data.build_full_trainset()
+svd.fit(trainset)
+print("done")
 
-    reader = Reader()
-    data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
-    data.split(n_folds=10)
-    svd = SVD()
-    trainset = data.build_full_trainset()
-    svd.fit(trainset)
+def final_res(userId):
+    ratings = pd.read_csv(path + 'newest_film_rating.csv')
+    del ratings['useless']
 
     best_movie = {}
     movie_liked_user = set([int(i) for i in ratings['movieId'][ratings['userId'] == userId]])

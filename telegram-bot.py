@@ -121,7 +121,6 @@ def button(bot, update):
         title = ' '.join(query.data.split(' ')[1:]).lower()
         user_name = str(update['callback_query']['from_user']['username'])
         if len(user_name) < 5:
-        # if user_name == "None" or user_name == None or not user_name or user_name == "":
             bot.send_message(chat_id=chat_id, text="\t-- !ERROR! --\nYour data won't be save\nYou don't have a username set on Telegram"\
                              "[How to do it](https://telegram.org/blog/usernames-and-secret-chats-v2)")
 
@@ -133,7 +132,7 @@ def button(bot, update):
 
             add_rating(user_name, original_title, 5)
 
-            # bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
+            bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
 
             # RECOMMANDATION
             recommanded_movies = final_res(str(user_name))
@@ -192,7 +191,7 @@ def button(bot, update):
 
         add_rating(user_name, title, int(rating))
 
-        # bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
+        bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
 
         recommanded_movies = final_res(str(user_name))
 
