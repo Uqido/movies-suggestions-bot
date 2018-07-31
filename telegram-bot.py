@@ -219,7 +219,7 @@ def button(bot, update):
         # revenue,runtime,spoken_languages,status,tagline,title,video,vote_average,vote_count
 
         message = "*" + str(row_title['original_title'].values[0]).upper() + "* \n" + \
-                  "*Release Date*: " + str(row_title['release_date'].values[0]) + "\n" #+ "[How to do it](https://telegram.org/blog/usernames-and-secret-chats-v2)"
+                  "*Release Date*: " + str(row_title['year'].values[0]) + "\n" #+ "[How to do it](https://telegram.org/blog/usernames-and-secret-chats-v2)"
                 #   "*Genres*: " + ','.join([row_title['genres'].values[i] for i in range(len(row_title['genres']))]) + "\n" 
                 #   "*Runtime*: " + str(row_title['runtime'].values[0]) + " minuts\n"
                 #   "*Overview*:\n" + str(row_title['overview'].values[0])

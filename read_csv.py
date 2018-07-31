@@ -9,10 +9,11 @@ path = '../the-movies-dataset/'
 def get_md():
     md = pd.read_csv(path + 'newest_film_metadata.csv', encoding='utf-8')
     del md['useless']
-    md = md.drop([19730, 29503, 35587])
+    # md = md.drop([19730, 29503, 35587])
     md['id'] = md['id'].astype('int')
     md['genres'] = md['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
-    md['year'] = pd.to_datetime(md['release_date'], errors='coerce').apply(lambda x: [str(x).split('-')[0]] if x != np.nan else [])
+    # md['year'] = pd.to_datetime(md['release_date'], errors='coerce').apply(lambda x: [str(x).split('-')[0]] if x != np.nan else [])
+    md['year'] = md['year'].fillna('[]').apply(lambda x: [str(x)] if isinstance(x, int) else [])
     return md
 
 
@@ -73,7 +74,7 @@ def add_rating(userId, movie_title, rating):
     id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
     indices_map = id_map.set_index('id')
 
-    with open(path + 'newest_film_rating.csv', 'a') as csvfile:
+    with open(path + 'newest_film_rating_2.csv', 'a') as csvfile:
         fieldnames = ['useless', 'userId','movieId', 'rating']
         # fieldnames = ['userId','movieId', 'rating', 'timestamp']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
