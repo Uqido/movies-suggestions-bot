@@ -12,7 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 
 from read_csv import get_titles, get_most_poular, add_rating, get_md
-from hybrid import final_res
+from hybrid import final_res, movies_from_last_one, list_movies_seen_user
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -21,13 +21,7 @@ logger = logging.getLogger(__name__)
 telegram.constants.MAX_MESSAGE_LENGTH = 10000
 telegram.constants.MAX_CAPTION_LENGTH = 1000
 
-# dovro' fare un thread the ogni N secondi salva su file questo dizionario
-# mi serve per i consigli della persona ideale
-dict_name_id = {}
-
-# text="*bold* _italic_ `fixed width font` [link](http://google.com)."
-# bot.send_photo(chat_id=chat_id, photo='https://telegram.org/img/t_logo.png')
-
+list_name_users = set()
 flag_input_start = False
 titles_movies = get_titles()
 
@@ -63,7 +57,7 @@ def input_movie_user(bot, update, possible_original_title, rate=0, info=False):
             count += 1
     elif rate == 0:
         for title in possible_original_title:
-            keyboard[count][0] = InlineKeyboardButton(title, callback_data="3 " + title)
+            keyboard[count][0] = InlineKeyboardButton(str(title), callback_data="3 " + str(title))
             count += 1
     else:
         for title in possible_original_title:
@@ -75,7 +69,7 @@ def input_movie_user(bot, update, possible_original_title, rate=0, info=False):
     except:
         chat_id = update.message.chat_id
         bot.send_message(chat_id=chat_id, text="Invalid name \n[Too short/long, or does't exist]")
-        bot.send_message(chat_id, 'Insert the name of the film', reply_markup=telegram.ForceReply(force_reply=True))
+        bot.send_message(chat_id, 'Insert the name of the movie', reply_markup=telegram.ForceReply(force_reply=True))
         flag_input_start = True
 
 @run_async
@@ -91,13 +85,14 @@ def start(bot, update):
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     name = str(update['message']['chat']['username'])
-    id_name = int(hashlib.sha256(name.encode('utf-8')).hexdigest(), 16)
-    dict_name_id[name] = id_name
 
-    # update.message.reply_text('*Hi* @' + name + "\nYour id is: `" + str(id_name) + "`", parse_mode=telegram.ParseMode.MARKDOWN)
-    update.message.reply_text('*Hi* @' + name, parse_mode=telegram.ParseMode.MARKDOWN)
+    if name in list_name_users:
+        update.message.reply_text('*Hi* @' + name + "\nYou have already started the adventure ;)\n/rating to continue" , parse_mode=telegram.ParseMode.MARKDOWN)
+    else:
+        update.message.reply_text('*Hi* @' + name, parse_mode=telegram.ParseMode.MARKDOWN)
+        update.message.reply_text('Click your favorite movie or search the name', reply_markup=reply_markup)
 
-    update.message.reply_text('Click your favorite movie or search the name', reply_markup=reply_markup)
+    list_name_users.add(name)
 
 
 # def contact(bot, update):
@@ -132,16 +127,15 @@ def button(bot, update):
 
             add_rating(user_name, original_title, 5)
 
-            bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
+            # bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
 
             # RECOMMANDATION
-            recommanded_movies = final_res(str(user_name))
+            recommended_movies = movies_from_last_one(str(user_name))
 
-            keyboard = [[i] for i in range(len(recommanded_movies))]
+            keyboard = [[i] for i in range(len(recommended_movies))]
             count = 0
-            for key, value in recommanded_movies:
-                # key = ''.join([i if ord(i) < 128 else '~' for i in key])
-                keyboard[count][0] = InlineKeyboardButton(str(key) + " -> " + str(value)[:5], callback_data="3 " + key)
+            for title, value in recommended_movies:
+                keyboard[count][0] = InlineKeyboardButton(str(title), callback_data="3 " + str(title))
                 count += 1
             
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -154,7 +148,7 @@ def button(bot, update):
     # INPUT USER
     elif option == "2":
         global flag_input_start
-        bot.send_message(chat_id, 'Insert the name of the film', reply_markup=telegram.ForceReply(force_reply=True))
+        bot.send_message(chat_id, 'Insert the name of the movie', reply_markup=telegram.ForceReply(force_reply=True))
         flag_input_start = True
 
     # SHOW MOVIE AND RATING
@@ -178,7 +172,7 @@ def button(bot, update):
                    ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
-        bot.send_message(chat_id=chat_id, text='Insert your personal rating for the film', reply_markup=reply_markup)
+        bot.send_message(chat_id=chat_id, text='Insert your personal rating for the movie', reply_markup=reply_markup)
     
     # SAVE AND ASK AGAIN
     elif option == "4":
@@ -191,15 +185,14 @@ def button(bot, update):
 
         add_rating(user_name, title, int(rating))
 
-        bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
+        # bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
 
-        recommanded_movies = final_res(str(user_name))
+        recommended_movies = movies_from_last_one(str(user_name))
 
-        keyboard = [[i] for i in range(len(recommanded_movies))]
+        keyboard = [[i] for i in range(len(recommended_movies))]
         count = 0
-        for key, value in recommanded_movies:
-            # key = ''.join([i if ord(i) < 128 else '~' for i in key])
-            keyboard[count][0] = InlineKeyboardButton(str(key) + " -> " + str(value)[:5], callback_data="3 " + key)
+        for title, value in recommended_movies:
+            keyboard[count][0] = InlineKeyboardButton(str(title), callback_data="3 " + str(title))
             count += 1
 
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -219,11 +212,11 @@ def button(bot, update):
         # revenue,runtime,spoken_languages,status,tagline,title,video,vote_average,vote_count
 
         message = "*" + str(row_title['original_title'].values[0]).upper() + "* \n" + \
-                  "*Release Date*: " + str(row_title['year'].values[0]) + "\n" #+ "[How to do it](https://telegram.org/blog/usernames-and-secret-chats-v2)"
-                #   "*Genres*: " + ','.join([row_title['genres'].values[i] for i in range(len(row_title['genres']))]) + "\n" 
-                #   "*Runtime*: " + str(row_title['runtime'].values[0]) + " minuts\n"
+                  "*Release Date*: " + str(row_title['release_date'].values[0]) + "\n"
+                #   "*Genres*: " + ','.join([row_title['genres'].values[i] for i in range(len(row_title['genres']))]) + "\n" + \
+                #   "*Runtime*: " + str(row_title['runtime'].values[0]) + " minuts\n" + \
                 #   "*Overview*:\n" + str(row_title['overview'].values[0])
-                
+        # "[How to do it](https://telegram.org/blog/usernames-and-secret-chats-v2)"                
 
         bot.edit_message_text(chat_id=chat_id, text=message, message_id=query.message.message_id, parse_mode=telegram.ParseMode.MARKDOWN)
         bot.send_photo(chat_id=chat_id, photo="https://image.tmdb.org/t/p/original/" + str(row_title['poster_path'].values[0]))
@@ -249,10 +242,13 @@ def input_user(bot, update):
 def rate_movie(bot, update, args):
     chat_id = update.message.chat_id
     if len(args) < 1:
-        bot.send_message(chat_id=chat_id, text="Invalid argument: /rate (name) [rate]\nExample:\n\t/rate Interstellar")
+        bot.send_message(chat_id=chat_id, text="Invalid argument: /rate name [rate]\nExample:\n\t/rate Interstellar 5")
     else:
         title, rate = '', ''
-        if args[-1].isdigit() and int(args[-1]) in [1, 2, 3, 4, 5]:
+        if args[-1].isdigit():
+            if not int(args[-1]) in [1, 2, 3, 4, 5]:
+                bot.send_message(chat_id=chat_id, text="Invalid rate \n[Must be 1,2,3,4 or 5]")
+                return 
             title, rate = ' '.join(args[:-1]), args[-1]
         else:
             title = ' '.join(args)
@@ -280,24 +276,60 @@ def search_movie(bot, update, args):
             bot.send_message(chat_id=chat_id, text="Invalid name \n[Too short/long, or does't exist]")
 
 @run_async
-def list_movies(bot, update):
+def rating_movies(bot, update):
     user_name = str(update['message']['chat']['username'])
     chat_id = update.message.chat_id
+    
+    # if not str(user_name) in list_name_users:
+    #     bot.send_message(chat_id=chat_id, text='You should rate same movie befor start.\n/start to start')
+    #     return 
 
-    recommanded_movies = final_res(str(user_name))
+    recommended_movies = movies_from_last_one(user_name)
 
-    if len(recommanded_movies) < 1:
+    if len(recommended_movies) < 1:
         bot.send_message(chat_id=chat_id, text='You should rate same movie befor start.\n/start to start')
         return 
 
-    keyboard = [[i] for i in range(len(recommanded_movies))]
+    keyboard = [[i] for i in range(len(recommended_movies))]
     count = 0
-    for key, value in recommanded_movies:
-        keyboard[count][0] = InlineKeyboardButton(str(key) + " -> " + str(value)[:5], callback_data="3 " + key)
+    for title, value in recommended_movies:
+        keyboard[count][0] = InlineKeyboardButton(str(title), callback_data="3 " + str(title))
         count += 1
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    bot.send_message(chat_id=chat_id, text='Here it is your recommanded movies :)\nClick your favorite movie', reply_markup=reply_markup)
+    bot.send_message(chat_id=chat_id, text='Click your favorite movie', reply_markup=reply_markup)
+
+
+@run_async
+def get_best_movie(bot, update):
+    user_name = str(update['message']['chat']['username'])
+    chat_id = update.message.chat_id
+    
+    # if not str(user_name) in list_name_users:
+    #     bot.send_message(chat_id=chat_id, text='You should rate same movie befor start.\n/start to start')
+    #     return 
+
+    bot.send_message(chat_id=chat_id, text="Wait for the recommandation")
+
+    title, rate = final_res(user_name)
+
+    if title == "":
+        bot.send_message(chat_id=chat_id, text='You should rate same movie befor start.\n/start to start')
+        return 
+
+    keyboard = [[InlineKeyboardButton(str(title) + " -> " + str(rate)[:5], callback_data="5 " + str(title))]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    bot.send_message(chat_id=chat_id, text='Here it is your recommanded movie :)', reply_markup=reply_markup)
+
+@run_async
+def get_list_movies(bot, update):
+    user_name = str(update['message']['chat']['username'])
+    chat_id = update.message.chat_id
+
+    lm = list_movies_seen_user(user_name)
+    bot.send_message(chat_id=chat_id, text='\n'.join(lm))
+
 
 @run_async
 def inline_movies(bot, update):
@@ -308,27 +340,33 @@ def inline_movies(bot, update):
     results = list()
 
     if query == 'movies' or query == "Movies":
-        recommanded_movies = final_res(str(user_name))
-        # return_msg = ""
-        # for key, value in recommanded_movies:
-        #     return_msg += str(key) + " -> " + str(value)[5:] + "\n" 
-        keyboard = [[i] for i in range(len(recommanded_movies))]
-        count = 0
-        for key, value in recommanded_movies:
-            keyboard[count][0] = InlineKeyboardButton(str(key) + " -> " + str(value)[:5], callback_data="3 " + key)
-            count += 1
+        pass
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        bot.send_message(chat_id=chat_id, text='Here it is your recommanded movies :)', reply_markup=reply_markup)
+        # if not str(user_name) in list_name_users:
+        #     bot.send_message(chat_id=chat_id, text='You should rate same movie befor start.\n/start to start')
+        #     return 
 
-        results.append(
-            InlineQueryResultArticle(
-                id=chat_id,
-                title='Movies',
-                input_message_content=InputTextMessageContent('Click your favorite movie'),
-                reply_markup=reply_markup
-            )
-        )
+        # recommended_movies = final_res(str(user_name))
+        # # return_msg = ""
+        # # for key, value in recommended_movies:
+        # #     return_msg += str(key) + " -> " + str(value)[5:] + "\n" 
+        # keyboard = [[i] for i in range(len(recommended_movies))]
+        # count = 0
+        # for key, value in recommended_movies:
+        #     keyboard[count][0] = InlineKeyboardButton(str(key) + " -> " + str(value)[:5], callback_data="3 " + key)
+        #     count += 1
+
+        # reply_markup = InlineKeyboardMarkup(keyboard)
+        # bot.send_message(chat_id=chat_id, text='Here it is your recommanded movies :)', reply_markup=reply_markup)
+
+        # results.append(
+        #     InlineQueryResultArticle(
+        #         id=chat_id,
+        #         title='Movies',
+        #         input_message_content=InputTextMessageContent('Click your favorite movie'),
+        #         reply_markup=reply_markup
+        #     )
+        # )
     elif query == 'search':
         return
     elif query == 'rate':
@@ -375,11 +413,13 @@ def error_callback(bot, update, error):
 # update_queue = Queue()
 # dp = Dispatcher(bot, update_queue)
 
-updater = Updater("680393052:AAHmCBJlFi3u326GMIKqEDuazKJvH9MpFm4", workers=32)
+updater = Updater("664814969:AAH4JRfnyOSFIzOwfYfCfViA2pQOXh6j8Uk", workers=32)
 
 ud = updater.dispatcher
 ud.add_handler(CommandHandler('start', start))
-ud.add_handler(CommandHandler('movies', list_movies))
+ud.add_handler(CommandHandler('rating', rating_movies))
+ud.add_handler(CommandHandler('movie', get_best_movie))
+ud.add_handler(CommandHandler('list', get_list_movies))
 ud.add_handler(CommandHandler('rate', rate_movie, pass_args=True))
 ud.add_handler(CommandHandler('search', search_movie, pass_args=True))
 ud.add_handler(CallbackQueryHandler(button)) # , pattern='main'

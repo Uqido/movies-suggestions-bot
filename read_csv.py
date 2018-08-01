@@ -7,22 +7,17 @@ import csv
 path = '../the-movies-dataset/'
 
 def get_md():
-    md = pd.read_csv(path + 'newest_film_metadata.csv', encoding='utf-8')
+    md = pd.read_csv(path + 'final_metadata.csv', encoding='utf-8')
     del md['useless']
-    # md = md.drop([19730, 29503, 35587])
     md['id'] = md['id'].astype('int')
     md['genres'] = md['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
     # md['year'] = pd.to_datetime(md['release_date'], errors='coerce').apply(lambda x: [str(x).split('-')[0]] if x != np.nan else [])
-    md['year'] = md['year'].fillna('[]').apply(lambda x: [str(x)] if isinstance(x, int) else [])
+    # md['year'] = md['year'].fillna('[]').apply(lambda x: [str(x)] if isinstance(x, int) else [])
     return md
 
 
 def get_titles():
     md = get_md()
-    # titles = set()
-    # for title in md['title']:
-    #     titles.add(''.join([i if ord(i) < 128 else '~' for i in str(title)]))
-    # return titles
     return [str(t) for t in md['title']]
 
 def get_most_poular():
@@ -45,7 +40,6 @@ def get_most_poular():
     qualified['wr'] = qualified.apply(weighted_rating, axis=1)
     qualified = qualified.sort_values('wr', ascending=False).head(250)
 
-    # TODO  dovrei ritornare titolo e immagine
     movie = []
     for i in qualified.head(7).values:
         movie.append([str(i[0]), "https://image.tmdb.org/t/p/original/" + str(i[-2])])
@@ -55,7 +49,7 @@ def get_most_poular():
 def add_rating(userId, movie_title, rating):
     md = get_md()
 
-    links = pd.read_csv(path + 'newest_film_links.csv', encoding='utf-8')
+    links = pd.read_csv(path + 'final_links.csv', encoding='utf-8')
     del links['useless']
     id_map = links[['movieId', 'tmdbId']]
     links = links[links['tmdbId'].notnull()]['tmdbId'].astype('int')
@@ -74,9 +68,8 @@ def add_rating(userId, movie_title, rating):
     id_map = id_map.merge(smd[['title', 'id']], on='id').set_index('title')
     indices_map = id_map.set_index('id')
 
-    with open(path + 'newest_film_rating_2.csv', 'a') as csvfile:
+    with open(path + 'smaller_final_ratings.csv', 'a') as csvfile:
         fieldnames = ['useless', 'userId','movieId', 'rating']
-        # fieldnames = ['userId','movieId', 'rating', 'timestamp']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         tmdbId = md.loc[md['title'] == movie_title]['id']
@@ -84,4 +77,3 @@ def add_rating(userId, movie_title, rating):
         movieId = indices_map['movieId'][tmdbId]
 
         writer.writerow({'useless':0, 'userId':userId, 'movieId':movieId, 'rating':rating})
-        # writer.writerow({'userId':userId, 'movieId':movieId, 'rating':rating, 'timestamp':0})
